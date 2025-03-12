@@ -14,9 +14,9 @@ using Autodesk.DataExchange.Core.Models;
 
 namespace aps_dx_sdk_form
 {
-	public partial class Form1 : Form
+	public partial class DXForm : Form
 	{
-		public Form1()
+		public DXForm()
 		{
 			InitializeComponent();
 		}
@@ -67,11 +67,11 @@ namespace aps_dx_sdk_form
 				STEPTolerance = 0.001
 			};
 
-			var ExchangeCreateRequest = new ExchangeCreateRequestACC()
+			ExchangeCreateRequestACC ExchangeCreateRequest = new ExchangeCreateRequestACC()
 			{
 				Host = HostingProvider,
 				Contract = new Autodesk.DataExchange.ContractProvider.ContractProvider(),
-				Description = string.Empty,
+				Description = "Sample Data Exchange created from SDK",
 				FileName = textBox_filename.Text,
 				HubId = textBox_hubid.Text,
 				ACCFolderURN = textBox_folderurn.Text,
@@ -107,7 +107,8 @@ namespace aps_dx_sdk_form
 			var Path = System.IO.Path.Combine(AppWorkspaceDirectory, "sample.ifc");
 			using (OpenFileDialog openFileDialog = new OpenFileDialog())
 			{
-				openFileDialog.Filter = "geometry files *.step|*.ifc|*.obj";
+				//files with .step, .ifc, and.obj extensions
+				openFileDialog.Filter = "Geometry Files (*.step;*.ifc;*.obj)|*.step;*.ifc;*.obj";
 
 				if (openFileDialog.ShowDialog() == DialogResult.OK)
 				{
@@ -116,7 +117,7 @@ namespace aps_dx_sdk_form
 				}
 			}
 
-			
+
 			//CreateGeometry is a static method, it can't be created from an instance of ElementDataModel
 			Geometry Geometry = ElementDataModel.CreateGeometry(new GeometryProperties(Path, CommonRenderStyle));
 
@@ -136,11 +137,6 @@ namespace aps_dx_sdk_form
 		}
 
 		private void label1_Click(object sender, EventArgs e)
-		{
-
-		}
-
-		private void textBox3_TextChanged(object sender, EventArgs e)
 		{
 
 		}

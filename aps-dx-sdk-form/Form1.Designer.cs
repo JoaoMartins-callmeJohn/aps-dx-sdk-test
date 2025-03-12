@@ -1,7 +1,7 @@
 ﻿
 namespace aps_dx_sdk_form
 {
-	partial class Form1
+	partial class DXForm
 	{
 		/// <summary>
 		///  Required designer variable.
@@ -104,7 +104,6 @@ namespace aps_dx_sdk_form
 			textBox_hubid.Name = "textBox_hubid";
 			textBox_hubid.Size = new Size(461, 47);
 			textBox_hubid.TabIndex = 5;
-			textBox_hubid.TextChanged += textBox3_TextChanged;
 			// 
 			// label4
 			// 
@@ -120,9 +119,9 @@ namespace aps_dx_sdk_form
 			label5.AutoSize = true;
 			label5.Location = new Point(47, 278);
 			label5.Name = "label5";
-			label5.Size = new Size(150, 41);
+			label5.Size = new Size(231, 41);
 			label5.TabIndex = 9;
-			label5.Text = "File Name";
+			label5.Text = "Exchange Name";
 			// 
 			// textBox_filename
 			// 
@@ -163,7 +162,7 @@ namespace aps_dx_sdk_form
 			textBox_projectid.Size = new Size(461, 47);
 			textBox_projectid.TabIndex = 13;
 			// 
-			// Form1
+			// DXForm
 			// 
 			AutoScaleDimensions = new SizeF(17F, 41F);
 			AutoScaleMode = AutoScaleMode.Font;
@@ -182,7 +181,8 @@ namespace aps_dx_sdk_form
 			Controls.Add(label1);
 			Controls.Add(textBox_clientid);
 			Controls.Add(button1);
-			Name = "Form1";
+			MaximizeBox = false;
+			Name = "DXForm";
 			Text = "Data Exchange";
 			Load += Form1_Load;
 			ResumeLayout(false);
