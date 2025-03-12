@@ -43,6 +43,7 @@ namespace aps_dx_sdk_form
 			textBox_folderurn = new TextBox();
 			label7 = new Label();
 			textBox_projectid = new TextBox();
+			backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
 			SuspendLayout();
 			// 
 			// button1
@@ -210,5 +211,6 @@ namespace aps_dx_sdk_form
 		private TextBox textBox_folderurn;
 		private Label label7;
 		private TextBox textBox_projectid;
+		private System.ComponentModel.BackgroundWorker backgroundWorker1;
 	}
 }
