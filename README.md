@@ -1,4 +1,4 @@
-# THIS IS A WORL ON PROGRESS
+# THIS IS A WORk ON PROGRESS
 
 # aps-dx-sdk-test
 
