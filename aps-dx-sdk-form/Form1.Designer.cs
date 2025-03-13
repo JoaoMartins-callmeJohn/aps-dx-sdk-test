@@ -44,13 +44,14 @@ namespace aps_dx_sdk_form
 			label7 = new Label();
 			textBox_projectid = new TextBox();
 			backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+			status_label = new Label();
 			SuspendLayout();
 			// 
 			// button1
 			// 
-			button1.Location = new Point(298, 549);
+			button1.Location = new Point(47, 549);
 			button1.Name = "button1";
-			button1.Size = new Size(188, 58);
+			button1.Size = new Size(712, 58);
 			button1.TabIndex = 0;
 			button1.Text = "Create Exchange";
 			button1.UseVisualStyleBackColor = true;
@@ -163,11 +164,21 @@ namespace aps_dx_sdk_form
 			textBox_projectid.Size = new Size(461, 47);
 			textBox_projectid.TabIndex = 13;
 			// 
+			// status_label
+			// 
+			status_label.AutoSize = true;
+			status_label.Location = new Point(47, 647);
+			status_label.Name = "status_label";
+			status_label.Size = new Size(0, 41);
+			status_label.TabIndex = 14;
+			status_label.TextAlign = ContentAlignment.MiddleCenter;
+			// 
 			// DXForm
 			// 
 			AutoScaleDimensions = new SizeF(17F, 41F);
 			AutoScaleMode = AutoScaleMode.Font;
-			ClientSize = new Size(823, 663);
+			ClientSize = new Size(823, 717);
+			Controls.Add(status_label);
 			Controls.Add(textBox_projectid);
 			Controls.Add(label7);
 			Controls.Add(textBox_folderurn);
@@ -212,5 +223,6 @@ namespace aps_dx_sdk_form
 		private Label label7;
 		private TextBox textBox_projectid;
 		private System.ComponentModel.BackgroundWorker backgroundWorker1;
+		private Label status_label;
 	}
 }

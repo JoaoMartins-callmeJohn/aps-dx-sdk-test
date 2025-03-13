@@ -31,42 +31,120 @@ namespace aps_dx_sdk_form
 			string AuthClientID = textBox_clientid.Text;
 			string AuthClientSecret = textBox_clientsecret.Text;
 			string AuthCallBack = "http://localhost:8080/";
-			SDKOptionsDefaultSetup SdkOptionsDefaultSetup = new SDKOptionsDefaultSetup()
+
+			try
 			{
-				ClientId = AuthClientID,
-				ClientSecret = AuthClientSecret,
-				CallBack = AuthCallBack,
-				ConnectorName = "Sample-Connector",
-				ConnectorVersion = "1.0.0",
-				HostApplicationName = "Revit",
-				HostApplicationVersion = "2023.0.1"
-			};
+				status_label.Text = "Creating Client...";
+				IClient DXClient = CreateClient(AuthClientID, AuthClientSecret, AuthCallBack);
 
-			// Synchronous
-			IClient DXClient = new Client(SdkOptionsDefaultSetup);
+				string AppWorkspaceDirectory;
+				ILogger Logger;
+				CreateLogger(out AppWorkspaceDirectory, out Logger);
 
-			var AppWorkspaceDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-			string AppBasePath = System.IO.Path.Combine(AppWorkspaceDirectory, "aps-ds-sdk-form");
-			var LogDirectoryPath = System.IO.Path.Combine(AppBasePath, "logs");
-			ILogger Logger = new Log(LogDirectoryPath);
+				status_label.Text = "Creating Auth...";
+				IAuth Auth = CreateAuth(AuthClientID, AuthClientSecret, AuthCallBack, Logger);
 
-			var AuthOption = new AuthOptions
+				IHostingProvider HostingProvider = new ACC(Logger, () => Auth.GetAuthToken());
+
+				GeometryConfiguration GeometryConfiguration = new GeometryConfiguration()
+				{
+					STEPProtocol = STEPProtocol.ConfigurationControlledDesign,
+					STEPTolerance = 0.001
+				};
+				ExchangeDetails ExchangeDetails = await CreateExchange(DXClient, HostingProvider);
+
+				//Defining the render style
+				RGBA rgba = new RGBA(215, 0, 0, 120);
+				RenderStyle CommonRenderStyle = new RenderStyle("Red", rgba, 1);
+
+				status_label.Text = "Creating Element...";
+				// Create ElementDataModel wrapper
+				ElementDataModel ExchangeDataWrapper;
+				Element Element;
+				CreateElement(DXClient, out ExchangeDataWrapper, out Element);
+
+				status_label.Text = "Creating Geometry...";
+				// Create Geometry
+				string Path = System.IO.Path.Combine(AppWorkspaceDirectory, "column.ifc");
+				Path = LoadGeometryFile(Path);
+
+				//CreateGeometry is a static method, it can't be created from an instance of ElementDataModel
+				CreateGeometry(CommonRenderStyle, ExchangeDataWrapper, Element, Path);
+
+				var ExchangeIdentifier = new DataExchangeIdentifier
+				{
+					CollectionId = ExchangeDetails.CollectionID,
+					ExchangeId = ExchangeDetails.ExchangeID,
+					HubId = ExchangeDetails.HubId
+				};
+
+				status_label.Text = "Creating Data Exchange...";
+				//publish the exchange
+				await DXClient.SyncExchangeDataAsync(ExchangeIdentifier, ExchangeDataWrapper.ExchangeData);
+
+				status_label.Text = "Generating viewable...";
+				//Generate viewable
+				await DXClient.GenerateViewableAsync(ExchangeIdentifier.ExchangeId, ExchangeIdentifier.CollectionId);
+
+				status_label.Text = "Data Exchange created successfully";
+			}
+			catch (Exception ex)
 			{
-				ClientId = AuthClientID,
-				ClientSecret = AuthClientSecret,
-				CallBack = AuthCallBack,
-				Logger = Logger
-			};
-			IAuth Auth = new Auth(AuthOption);
+				status_label.Text = ex.Message;
+			}
 
-			IHostingProvider HostingProvider = new ACC(Logger, () => Auth.GetAuthToken());
+			//wait 3 seconds
+			await Task.Delay(3000);
+			status_label.Text = "";
+		}
 
-			GeometryConfiguration GeometryConfiguration = new GeometryConfiguration()
+		private static void CreateGeometry(RenderStyle CommonRenderStyle, ElementDataModel ExchangeDataWrapper, Element Element, string Path)
+		{
+			Geometry Geometry = ElementDataModel.CreateGeometry(new GeometryProperties(Path, CommonRenderStyle));
+
+			// Map elements and geometry.        
+			var ElementGeometry = new List<ElementGeometry> { Geometry };
+			ExchangeDataWrapper.SetElementGeometryByElement(Element, ElementGeometry);
+		}
+
+		private static string LoadGeometryFile(string Path)
+		{
+			using (OpenFileDialog openFileDialog = new OpenFileDialog())
 			{
-				STEPProtocol = STEPProtocol.ConfigurationControlledDesign,
-				STEPTolerance = 0.001
-			};
+				//files with .step, .ifc, and.obj extensions
+				openFileDialog.Filter = "Geometry Files (*.step;*.ifc;*.obj)|*.step;*.ifc;*.obj";
 
+				if (openFileDialog.ShowDialog() == DialogResult.OK)
+				{
+					//Get the path of specified file
+					Path = openFileDialog.FileName;
+				}
+			}
+
+			return Path;
+		}
+
+		private static void CreateElement(IClient DXClient, out ElementDataModel ExchangeDataWrapper, out Element Element)
+		{
+			ExchangeDataWrapper = ElementDataModel.Create(DXClient);
+			ExchangeDataWrapper.SetViewableWorldCoordinates(new ViewableWorldCoordinates()
+			{
+				//default value will be UP=0 0 1, Front=0 -1 0, North=0 1 0
+				UP = new Autodesk.GeometryPrimitives.Math.Vector3d(1, 0, 0),
+				Front = new Autodesk.GeometryPrimitives.Math.Vector3d(0, 0, 1),
+				North = new Autodesk.GeometryPrimitives.Math.Vector3d(0, 0, -1)
+			});
+
+			// Adds elements to the exchange (child elements are not present)
+			Element = ExchangeDataWrapper.AddElement(new ElementProperties("1234", "Column", "Structural Column", "Column", "Steel Column")
+			{
+				LengthUnit = UnitFactory.MilliMeter,
+				DisplayLengthUnit = UnitFactory.MilliMeter
+			});
+		}
+
+		private async Task<ExchangeDetails> CreateExchange(IClient DXClient, IHostingProvider HostingProvider)
+		{
 			ExchangeCreateRequestACC ExchangeCreateRequest = new ExchangeCreateRequestACC()
 			{
 				Host = HostingProvider,
@@ -81,59 +159,46 @@ namespace aps_dx_sdk_form
 			};
 
 			ExchangeDetails ExchangeDetails = await DXClient.CreateExchangeAsync(ExchangeCreateRequest);
+			return ExchangeDetails;
+		}
 
-			RGBA rgba = new RGBA(215, 0, 0, 120);
-			RenderStyle CommonRenderStyle = new RenderStyle("Red", rgba, 1);
-
-			// Create ElementDataModel wrapper
-			ElementDataModel ExchangeDataWrapper = ElementDataModel.Create(DXClient);
-
-			ExchangeDataWrapper.SetViewableWorldCoordinates(new ViewableWorldCoordinates()
+		private static IAuth CreateAuth(string AuthClientID, string AuthClientSecret, string AuthCallBack, ILogger Logger)
+		{
+			var AuthOption = new AuthOptions
 			{
-				//default value will be UP=0 0 1, Front=0 -1 0, North=0 1 0
-				UP = new Autodesk.GeometryPrimitives.Math.Vector3d(1, 0, 0),
-				Front = new Autodesk.GeometryPrimitives.Math.Vector3d(0, 0, 1),
-				North = new Autodesk.GeometryPrimitives.Math.Vector3d(0, 0, -1)
-			});
+				ClientId = AuthClientID,
+				ClientSecret = AuthClientSecret,
+				CallBack = AuthCallBack,
+				Logger = Logger
+			};
+			IAuth Auth = new Auth(AuthOption);
+			return Auth;
+		}
 
-			// Adds elements to the exchange (child elements are not present)
-			var Element = ExchangeDataWrapper.AddElement(new ElementProperties("1234", "Towers", "Mass", "Cylinder", "Four Cylinders")
+		private static void CreateLogger(out string AppWorkspaceDirectory, out ILogger Logger)
+		{
+			AppWorkspaceDirectory = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
+			string AppBasePath = System.IO.Path.Combine(AppWorkspaceDirectory, "aps-ds-sdk-form");
+			var LogDirectoryPath = System.IO.Path.Combine(AppBasePath, "logs");
+			Logger = new Log(LogDirectoryPath);
+		}
+
+		private static IClient CreateClient(string AuthClientID, string AuthClientSecret, string AuthCallBack)
+		{
+			SDKOptionsDefaultSetup SdkOptionsDefaultSetup = new SDKOptionsDefaultSetup()
 			{
-				LengthUnit = UnitFactory.MilliMeter,
-				DisplayLengthUnit = UnitFactory.MilliMeter
-			});
-
-			// Create Geometry
-			var Path = System.IO.Path.Combine(AppWorkspaceDirectory, "sample.ifc");
-			using (OpenFileDialog openFileDialog = new OpenFileDialog())
-			{
-				//files with .step, .ifc, and.obj extensions
-				openFileDialog.Filter = "Geometry Files (*.step;*.ifc;*.obj)|*.step;*.ifc;*.obj";
-
-				if (openFileDialog.ShowDialog() == DialogResult.OK)
-				{
-					//Get the path of specified file
-					Path = openFileDialog.FileName;
-				}
-			}
-
-
-			//CreateGeometry is a static method, it can't be created from an instance of ElementDataModel
-			Geometry Geometry = ElementDataModel.CreateGeometry(new GeometryProperties(Path, CommonRenderStyle));
-
-			// Map elements and geometry.        
-			var ElementGeometry = new List<ElementGeometry> { Geometry };
-			ExchangeDataWrapper.SetElementGeometryByElement(Element, ElementGeometry);
-
-			var ExchangeIdentifier = new DataExchangeIdentifier
-			{
-				CollectionId = ExchangeDetails.CollectionID,
-				ExchangeId = ExchangeDetails.ExchangeID,
-				HubId = ExchangeDetails.HubId
+				ClientId = AuthClientID,
+				ClientSecret = AuthClientSecret,
+				CallBack = AuthCallBack,
+				ConnectorName = "Sample-Connector",
+				ConnectorVersion = "1.0.0",
+				HostApplicationName = "Revit",
+				HostApplicationVersion = "2023.0.1"
 			};
 
-			//publish the exchange
-			await DXClient.SyncExchangeDataAsync(ExchangeIdentifier, ExchangeDataWrapper.ExchangeData);
+			// Synchronous
+			IClient DXClient = new Client(SdkOptionsDefaultSetup);
+			return DXClient;
 		}
 
 		private void label1_Click(object sender, EventArgs e)
