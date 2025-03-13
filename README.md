@@ -21,4 +21,4 @@ Sample format:
 
 Your Exchange will be created in the selected folder with the name you specified.
 
-You can use the [Sample IFC file](./aps-dx-sdk-form/sample.ifc) file for Exchange creation.
+You can use the [Sample column IFC file](./aps-dx-sdk-form/column.ifc) file for Exchange creation.
